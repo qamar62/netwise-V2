@@ -1,0 +1,21 @@
+services:
+  netwise:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: netwise:latest
+    container_name: netwise
+    restart: unless-stopped
+    # Inject DB creds, basic-auth and site URL at runtime.
+    # env_file passes values literally (no $-expansion), so the DB
+    # password is used exactly as written here.
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    ports:
+      # host:container — Cloudflare Tunnel points at http://<proxmox-ip>:3000
+      - "3000:3000"
+    # The app talks to your LAN Postgres (192.168.1.155) over the default
+    # bridge network, which can already reach the host's LAN.
