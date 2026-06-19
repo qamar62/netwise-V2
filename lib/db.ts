@@ -7,7 +7,7 @@ import { Pool, type QueryResultRow } from 'pg'
  *   DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
  *
  * Optional:
- *   DB_SSL = "true" | "false"  (defaults: off for localhost, on otherwise)
+ *   DB_SSL = "true" | "false"  (default: false — use true only for cloud/managed Postgres)
  *
  * A module-level singleton is reused across hot reloads in dev so we don't
  * exhaust connections.
@@ -16,6 +16,19 @@ import { Pool, type QueryResultRow } from 'pg'
 const globalForDb = globalThis as unknown as {
   __netwisePool?: Pool
   __netwiseTableReady?: Promise<void>
+}
+
+/**
+ * Parse DB_SSL (and similar flags). Default is false — typical for LAN/Proxmox Postgres.
+ * Only enables SSL when explicitly set to true/1/yes/on.
+ */
+function envFlag(value: string | undefined, defaultValue = false): boolean {
+  if (value == null) return defaultValue
+  const normalized = value.trim().toLowerCase().replace(/^['"]|['"]$/g, '')
+  if (normalized === '') return defaultValue
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false
+  return defaultValue
 }
 
 function createPool(): Pool {
@@ -31,9 +44,7 @@ function createPool(): Pool {
     )
   }
 
-  const isLocal = host === 'localhost' || host === '127.0.0.1'
-  const sslEnv = process.env.DB_SSL?.toLowerCase()
-  const useSsl = sslEnv ? sslEnv === 'true' : !isLocal
+  const useSsl = envFlag(process.env.DB_SSL, false)
 
   return new Pool({
     host,
@@ -41,7 +52,7 @@ function createPool(): Pool {
     database,
     user,
     password,
-    ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+    ssl: useSsl ? { rejectUnauthorized: false } : false,
     max: 5,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
