@@ -60,6 +60,24 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 {data.type === 'invoice' ? 'Invoice' : 'Quotation'}
               </h2>
               <p className="mt-2 font-mono text-lg text-gray-700">{data.documentNumber}</p>
+              {data.type === 'invoice' && (
+                <div className="mt-3 flex justify-end">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1 text-sm font-bold uppercase tracking-wide ${
+                      data.status === 'paid'
+                        ? 'border-green-600 bg-green-50 text-green-700'
+                        : 'border-red-500 bg-red-50 text-red-600'
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        data.status === 'paid' ? 'bg-green-600' : 'bg-red-500'
+                      }`}
+                    />
+                    {data.status === 'paid' ? 'Paid' : 'Unpaid'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

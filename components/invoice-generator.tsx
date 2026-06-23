@@ -89,36 +89,61 @@ export function InvoiceGenerator() {
     if (!previewRef.current) return
 
     setIsGeneratingPdf(true)
+    let sandbox: HTMLDivElement | null = null
     try {
       const element = previewRef.current.querySelector('#document-preview') as HTMLElement
       if (!element) {
         throw new Error('Preview element not found')
       }
 
-      const canvas = await html2canvas(element, {
+      // Render the preview at a fixed full A4 width so nothing (e.g. the right
+      // "Total" column) gets clipped by the constrained on-screen layout.
+      // 794px ≈ A4 width (210mm) at 96 DPI.
+      const A4_WIDTH_PX = 794
+      sandbox = document.createElement('div')
+      sandbox.style.position = 'fixed'
+      sandbox.style.top = '0'
+      sandbox.style.left = '-10000px'
+      sandbox.style.width = `${A4_WIDTH_PX}px`
+      sandbox.style.background = '#ffffff'
+
+      const clone = element.cloneNode(true) as HTMLElement
+      clone.style.width = `${A4_WIDTH_PX}px`
+      sandbox.appendChild(clone)
+      document.body.appendChild(sandbox)
+
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        windowWidth: A4_WIDTH_PX,
       })
 
-      const imgWidth = 210 // A4 width in mm
+      const pageWidth = 210 // A4 width in mm
       const pageHeight = 297 // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      let heightLeft = imgHeight
-      let position = 0
 
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
+      // Scale the captured image to fit entirely within a single A4 page,
+      // preserving aspect ratio. Width-bound by default; if that would exceed
+      // the page height, fall back to height-bound so it always fits one page.
+      let imgWidth = pageWidth
+      let imgHeight = (canvas.height * imgWidth) / canvas.width
+      if (imgHeight > pageHeight) {
+        imgHeight = pageHeight
+        imgWidth = (canvas.width * imgHeight) / canvas.height
       }
+
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const offsetX = (pageWidth - imgWidth) / 2
+      const offsetY = (pageHeight - imgHeight) / 2
+      pdf.addImage(
+        canvas.toDataURL('image/png'),
+        'PNG',
+        offsetX,
+        offsetY > 0 ? offsetY : 0,
+        imgWidth,
+        imgHeight,
+      )
 
       const fileName = `${data.type === 'invoice' ? 'Invoice' : 'Quotation'}_${data.documentNumber}.pdf`
       pdf.save(fileName)
@@ -127,6 +152,9 @@ export function InvoiceGenerator() {
       console.error('Error generating PDF:', error)
       toast.error('Failed to generate PDF. Please try again.')
     } finally {
+      if (sandbox && sandbox.parentNode) {
+        sandbox.parentNode.removeChild(sandbox)
+      }
       setIsGeneratingPdf(false)
     }
   }

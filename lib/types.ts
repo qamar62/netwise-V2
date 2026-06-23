@@ -14,6 +14,8 @@ export interface ClientInfo {
   address: string
 }
 
+export type PaymentStatus = 'paid' | 'unpaid'
+
 export interface DocumentData {
   type: 'invoice' | 'quotation'
   documentNumber: string
@@ -25,6 +27,7 @@ export interface DocumentData {
   paymentDetails: string
   discount: number
   vatRate: number
+  status: PaymentStatus // Paid / Unpaid (invoices)
 }
 
 export interface CompanyInfo {

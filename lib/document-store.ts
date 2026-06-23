@@ -49,6 +49,7 @@ export function createDefaultDocument(type: 'invoice' | 'quotation'): DocumentDa
     paymentDetails: 'Bank Transfer\nBank: Emirates NBD\nAccount Name: Netwise\nIBAN: AE00 0000 0000 0000 0000 000',
     discount: 0,
     vatRate: 5,
+    status: 'unpaid',
   }
 }
 
@@ -65,7 +66,8 @@ export function loadDraft(): DocumentData | null {
   if (!stored) return null
   
   try {
-    return JSON.parse(stored) as DocumentData
+    const parsed = JSON.parse(stored) as DocumentData
+    return { ...parsed, status: parsed.status ?? 'unpaid' }
   } catch {
     return null
   }

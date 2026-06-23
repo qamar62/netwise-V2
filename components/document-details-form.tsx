@@ -1,6 +1,6 @@
 'use client'
 
-import { Hash, Calendar, Clock } from 'lucide-react'
+import { Hash, Calendar, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
@@ -66,6 +66,37 @@ export function DocumentDetailsForm({ data, onChange }: DocumentDetailsFormProps
               </div>
             </Field>
           </div>
+          {data.type === 'invoice' && (
+            <Field>
+              <FieldLabel>Payment Status</FieldLabel>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onChange({ status: 'paid' })}
+                  className={`flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    data.status === 'paid'
+                      ? 'border-green-600 bg-green-50 text-green-700'
+                      : 'border-input bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Paid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange({ status: 'unpaid' })}
+                  className={`flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    data.status === 'unpaid'
+                      ? 'border-red-500 bg-red-50 text-red-600'
+                      : 'border-input bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  Unpaid
+                </button>
+              </div>
+            </Field>
+          )}
         </FieldGroup>
       </CardContent>
     </Card>
